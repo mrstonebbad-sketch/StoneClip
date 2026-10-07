@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StoneClip - Editor de Vídeo</title>
+    <style>
+        :root {
+            --bg-main: #121214;
+            --bg-panel: #1aa1e26;
+            --bg-timeline: #18181c;
+            --accent: #00b4d8;
+            --accent-hover: #0077b6;
+            --text: #ffffff;
+            --text-muted: #a0a0a5;
+            --border: #2f2f38;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* TELA 1: GERENCIADOR DE PROJETOS */
+        #project-manager {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 40px;
+        }
+
+        .brand-title {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: var(--text);
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .project-dashboard {
+            width: 100%;
+            max-width: 1000px;
+            background: #1c1c24;
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid var(--border);
+        }
+
+        .dashboard-header {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .btn-create-project {
+            background: #252530;
+            border: 2px dashed #444452;
+            border-radius: 12px;
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.3s;
+            color: var(--text-muted);
+            gap: 12px;
+        }
+
+        .btn-create-project:hover {
+            border-color: var(--accent);
+            color: var(--text);
+            background: #2a2a38;
+            transform: translateY(-2px);
+        }
+
+        /* ÍCONE CUSTOMIZADO DE + COM RISQUINHOS */
+        .custom-plus-icon {
+            position: relative;
+            width: 50px;
+            height: 50px;
+        }
+        .custom-plus-icon ::before, .custom-plus-icon ::after {
+            content: '';
+            position: absolute;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+        /* Linhas do Mais */
+        .plus-v { top: 10px; left: 23px; width: 4px; height: 30px; }
+        .plus-h { top: 23px; left: 10px; width: 30px; height: 4px; }
+        /* Risquinhos de baixo (partidos/camadas) */
+        .lines-layer {
+            position: absolute;
+            bottom: -5px;
+            left: 5px;
+            width: 40px;
+            height: 2px;
+            background: #555562;
+        }
+        .lines-layer.l1 { bottom: -2px; width: 34px; left: 8px; }
+        .lines-layer.l2 { bottom: -6px; width: 24px; left: 13px; }
+
+        /* TELA 2: INTERFACE DO EDITOR (ESTILO CAPCUT) */
+        #editor-interface {
+            display: none; /* Oculto inicialmente */
+            grid-template-rows: 50px 1fr 1.2fr;
+            height: 100vh;
+        }
+
+        header {
+            background: #16161a;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .logo-area {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--accent);
+        }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid #444;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .main-workspace {
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            background: #141417;
+        }
+
+        .panel {
+            background: #18181c;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+        }
+
+        /* PLAYER DE VÍDEO */
+        .preview-zone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0f0f12;
+            position: relative;
+        }
+
+        .video-container {
+            width: 80%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* SEÇÃO DA TIMELINE */
+        .timeline-area {
+            background: var(--bg-timeline);
+            border-top: 2px solid var(--border);
+            display: grid;
+            grid-template-rows: 45px 1fr;
+            overflow: hidden;
+        }
+
+        .timeline-toolbar {
+            background: #1c1c22;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            gap: 10px;
+        }
+
+        .tool-btn {
+            background: #2a2a35;
+            border: 1px solid #3a3a45;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tool-btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* Ícone de Triângulo para a Marcação (Keyframe) */
+        .triangle-icon {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 10px solid #fff;
+            display: inline-block;
+        }
+
+        .timeline-tracks {
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .track {
+            background: #22222a;
+            height: 45px;
+            border-radius: 6px;
+            border: 1px solid #2d2d38;
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        /* PAINEL DE PROPRIEDADES (DIREITA) */
+        .properties-panel select, .properties-panel input {
+            width: 100%;
+            padding: 8px;
+            background: #252530;
+            border: 1px solid var(--border);
+            color: white;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            margin-top: 5px;
+        }
+
+        .btn-export {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-export:hover { background: var(--accent-hover); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- ================= TELA 1: ABA DE PROJETOS ================= -->
+    <div id="project-manager">
+        <h1 class="brand-title">StoneClip</h1>
+        <div class="project-dashboard">
+            <div class="dashboard-header">
+                <span>Seus Projetos Recentes</span>
+                <span style="font-size: 0.9rem;">Beta v1.0</span>
+            </div>
+            
+            <div class="projects-grid">
+                <!-- Botão de Criar Projeto (+) -->
+                <div class="btn-create-project" id="btn-new-project">
+                    <div class="custom-plus-icon">
+                        <div class="plus-v"></div>
+                        <div class="plus-h"></div>
+                        <div class="lines-layer l1"></div>
+                        <div class="lines-layer l2"></div>
+                    </div>
+                    <span>Criar Projeto</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= TELA 2: TELA DO EDITOR ================= -->
+    <div id="editor-interface">
+        <header>
+            <button class="back-btn" id="btn-back">← Voltar</button>
+            <div class="logo-area">StoneClip Pro</div>
+            <button class="btn-export" onclick="alert('Exportando seu projeto com FFmpeg...')">Exportar</button>
+        </header>
+
+        <div class="main-workspace">
+            <!-- Painel Esquerdo: Recursos -->
+            <div class="panel">
+                <h3>Recursos</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Adicione mídias ao projeto</p>
+                <input type="file" id="media-upload" accept="video/*,image/*" style="display: none;">
+                <button class="tool-btn" style="width: 100%; justify-content: center; height: 40px;" onclick="document.getElementById('media-upload').click()">
+                    + Adicionar Recurso
+                </button>
+                <div id="media-list" style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+
+            <!-- Painel Central: Player Visualizador -->
+            <div class="preview-zone">
+                <div class="video-container">
+                    <span id="player-placeholder" style="color: var(--text-muted)">Nenhuma mídia selecionada</span>
+                    <video id="main-player" controls style="width: 100%; height: 100%; display: none; border-radius: 8px;"></video>
+                </div>
+            </div>
+
+            <!-- Painel Direito: Efeitos, Estilos e Chroma Key -->
+            <div class="panel properties-panel">
+                <h3>Configurações de Marcação</h3>
+                
+                <label>Estilo de Interpolação</label>
+                <select id="keyframes-style">
+                    <option value="linear">Linear</option>
+                    <option value="elastic">Elastic</option>
+                    <option value="easing-in">Easing in</option>
+                    <option value="easing-out">Easing out</option>
+                    <option value="zig-zag">Zig-Zag</option>
+                    <option value="cubic">Cubic</option>
+                </select>
+
+                <label>Gráficos de Movimento</label>
+                <select id="keyframes-graphics">
+                    <option value="none">Nenhum</option>
+                    <option value="smooth">Suave</option>
+                    <option value="bounce">Salto</option>
+                    <option value="abrupt">Abrupto</option>
+                </select>
+
+                <hr style="border-color: var(--border); margin: 15px 0;">
+
+                <h3>Efeitos Avançados</h3>
+                <div style="margin-top: 10px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="chroma-key-enable" style="width: auto; margin: 0;"> Ativar Chroma Key (Fundo Verde)
+                    </label>
+                </div>
+                
+                <button class="tool-btn" style="margin-top: 20px; background: #d93838; border: none;" onclick="alert('Estilos e Marcações removidos.')">Remover Tudo</button>
+            </div>
+        </div>
+
+        <!-- Área Inferior: Timeline Avançada -->
+        <div class="timeline-area">
+            <div class="timeline-toolbar">
+                <button class="tool-btn" id="btn-cut">✂ Cortar Recurso</button>
+                <button class="tool-btn" id="btn-keyframe"><span class="triangle-icon"></span> + Marcação</button>
+                <button class="tool-btn" id="btn-freeze">❄ Congelar (3s)</button>
+                <button class="tool-btn" id="btn-add-timeline" style="margin-left: auto; color: var(--accent);">+ Add Timeline</button>
+            </div>
+            
+            <div class="timeline-tracks" id="timeline-container">
+                <!-- Linhas de tracks iniciadas dinamicamente -->
+                <div class="track">Camada Principal (Vídeo/Foto)</div>
+                <div class="track">Camada de Áudio / Efeitos</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= LÓGICA DO SISTEMA (JAVASCRIPT) ================= -->
+    <script>
+        const screenProjects = document.getElementById('project-manager');
+        const screenEditor = document.getElementById('editor-interface');
+        const btnNewProject = document.getElementById('btn-new-project');
+        const btnBack = document.getElementById('btn-back');
+        const btnAddTimeline = document.getElementById('btn-add-timeline');
+        const timelineContainer = document.getElementById('timeline-container');
+        
+        let trackCount = 2;
+
+        // Alternar telas
+        btnNewProject.addEventListener('click', () => {
+            screenProjects.style.display = 'none';
+            screenEditor.style.display = 'grid';
+        });
+
+        btnBack.addEventListener('click', () => {
+            screenEditor.style.display = 'none';
+            screenProjects.style.display = 'flex';
+        });
+
+        // Adicionar infinitas Timelines
+        btnAddTimeline.addEventListener('click', () => {
+            trackCount++;
+            const newTrack = document.createElement('div');
+            newTrack.className = 'track';
+            newTrack.innerText = `Nova Camada ${trackCount}`;
+            timelineContainer.appendChild(newTrack);
+        });
+
+        // Lógica para carregar o arquivo no Player
+        const mediaUpload = document.getElementById('media-upload');
+        const mainPlayer = document.getElementById('main-player');
+        const playerPlaceholder = document.getElementById('player-placeholder');
+
+        mediaUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if(file) {
+                const fileURL = URL.createObjectURL(file);
+                playerPlaceholder.style.display = 'none';
+                mainPlayer.src = fileURL;
+                mainPlayer.style.display = 'block';
+            }
+        });
+
+        // Botão de Congelar (Função Padrão 3s)
+        document.getElementById('btn-freeze').addEventListener('click', () => {
+            alert('Elemento congelado! Criada uma seção estática com 3 segundos de duração padrão na timeline selecionada.');
+        });
+
+        // Botão de Cortar
+        document.getElementById('btn-cut').addEventListener('click', () => {
+            alert('Recurso recortado na posição atual da agulha da timeline!');
+        });
+
+        // Botão de Marcação (Keyframe em Triângulo)
+        document.getElementById('btn-keyframe').addEventListener('click', () => {
+            alert('Marcação (▲) adicionada na propriedade selecionada!');
+        });
+    </script>
+</body>
+</html>
